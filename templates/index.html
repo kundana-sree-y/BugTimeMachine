@@ -1,0 +1,799 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BugTimeMachine | Python Visual Tutor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <style>
+        .bubble-container {
+            width: 100%;
+            padding: 14px 4px;
+            text-align: center;
+        }
+
+        .bubble-stats {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 7px;
+            margin-bottom: 18px;
+        }
+
+        .bubble-stat {
+            padding: 10px 5px;
+            background: white;
+            border: 1px solid #e9e5ff;
+            border-radius: 10px;
+        }
+
+        .bubble-stat small {
+            display: block;
+            color: #9993b5;
+            font-size: 8px;
+            font-weight: bold;
+            letter-spacing: .5px;
+        }
+
+        .bubble-stat strong {
+            display: block;
+            margin-top: 5px;
+            color: #7460e9;
+            font-size: 17px;
+        }
+
+        .bubble-bars {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 7px;
+            height: 175px;
+            padding: 12px 5px 0;
+            border-bottom: 2px solid #ded9f5;
+        }
+
+        .bubble-slot {
+            display: flex;
+            flex: 1;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            height: 100%;
+            min-width: 0;
+            gap: 7px;
+        }
+
+        .bubble-bar {
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            width: 100%;
+            max-width: 55px;
+            min-height: 22px;
+            padding-top: 7px;
+            border-radius: 9px 9px 3px 3px;
+            color: white;
+            font-weight: 700;
+            box-shadow: 0 5px 12px #7966f426;
+            transition: height .42s ease, background .3s ease,
+                        transform .35s ease, box-shadow .3s ease;
+            animation: barEnter .35s ease both;
+        }
+
+        .bubble-bar span {
+            font-size: 12px;
+        }
+
+        .bubble-bar.comparing {
+            background: linear-gradient(180deg, #ffbf69, #f28c28) !important;
+            box-shadow: 0 0 0 4px #ffb84d30, 0 8px 18px #f28c2840;
+            transform: translateY(-8px);
+        }
+
+        .bubble-bar.sorted {
+            background: linear-gradient(180deg, #39d6a1, #17a879) !important;
+        }
+
+        .bubble-index {
+            color: #9690ae;
+            font-size: 9px;
+        }
+
+        .bubble-message {
+            margin-top: 15px;
+            padding: 12px;
+            border: 1px solid #e7e1ff;
+            border-radius: 11px;
+            background: white;
+            color: #71698e;
+            font-size: 11px;
+            line-height: 1.7;
+            text-align: left;
+        }
+
+        .bubble-message strong {
+            color: #705ae7;
+        }
+
+        .bubble-legend {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 12px;
+            color: #8985a0;
+            font-size: 9px;
+        }
+
+        .legend-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            margin-right: 4px;
+            border-radius: 3px;
+        }
+
+        @keyframes barEnter {
+            from { opacity: .4; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 700px) {
+            .bubble-bars { gap: 4px; }
+            .bubble-bar span { font-size: 10px; }
+        }
+    </style>
+</head>
+
+<body>
+<div class="app-shell">
+
+    <aside class="sidebar">
+        <a class="brand" href="#">
+            <span class="brand-icon">⌘</span>
+            <span>BugTime<span class="brand-accent">Machine</span></span>
+        </a>
+
+        <div class="sidebar-label">WORKSPACE</div>
+        <button class="nav-item active" data-section="workspace">
+            <span>▦</span> Code Playground
+        </button>
+        <button class="nav-item" data-section="memory">
+            <span>◈</span> Memory Lab
+        </button>
+        <button class="nav-item" data-section="console">
+            <span>⌁</span> Output Console
+        </button>
+
+        <div class="sidebar-label learn-label">LEARNING</div>
+        <div class="learning-card">
+            <div class="learning-icon">✦</div>
+            <h3>Learn by seeing</h3>
+            <p>Watch your code come alive, one step at a time.</p>
+            <div class="mini-progress"><span></span></div>
+            <small>YOUR PYTHON JOURNEY</small>
+        </div>
+
+        <div class="sidebar-bottom">
+            <span class="status-dot"></span>
+            <div>
+                <strong>Local workspace</strong>
+                <small>Your code runs on this computer</small>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="topbar">
+            <div>
+                <div class="eyebrow">YOUR INTERACTIVE PYTHON STUDIO</div>
+                <h1>Make code <span class="gradient-text">make sense.</span></h1>
+                <p class="subtitle">Write it. Run it. Watch how Python thinks.</p>
+            </div>
+            <div class="topbar-right">
+                <div class="status-pill">
+                    <span class="status-dot"></span> Ready to explore
+                </div>
+                <div class="avatar">Py</div>
+            </div>
+        </header>
+
+        <section class="stats-grid">
+            <div class="stat-card stat-purple">
+                <div class="stat-top">CODE STEPS <span class="stat-icon">↗</span></div>
+                <div class="stat-value" id="totalSteps">0</div>
+                <div class="stat-caption">Execution events captured</div>
+            </div>
+            <div class="stat-card stat-blue">
+                <div class="stat-top">VARIABLES <span class="stat-icon">◇</span></div>
+                <div class="stat-value" id="variableCount">0</div>
+                <div class="stat-caption">Values in current step</div>
+            </div>
+            <div class="stat-card stat-pink">
+                <div class="stat-top">CURRENT STEP <span class="stat-icon">◎</span></div>
+                <div class="stat-value" id="currentStepStat">—</div>
+                <div class="stat-caption">Move through execution</div>
+            </div>
+            <div class="stat-card stat-green">
+                <div class="stat-top">RUN STATUS <span class="stat-icon">✓</span></div>
+                <div class="stat-value status-text" id="runStatus">Ready</div>
+                <div class="stat-caption">Waiting for your code</div>
+            </div>
+        </section>
+
+        <section class="workspace-grid" id="workspace">
+            <div class="panel editor-panel">
+                <div class="panel-heading">
+                    <div class="panel-title">
+                        <span class="heading-icon purple-icon">⌨</span>
+                        <div>
+                            <h2>Code Playground</h2>
+                            <p>Your Python starts here</p>
+                        </div>
+                    </div>
+                    <span class="file-chip">● main.py</span>
+                </div>
+
+                <div class="editor-toolbar">
+                    <span><span class="language-dot"></span> Python 3</span>
+                    <button class="text-button" id="exampleBtn">↻ Load Bubble Sort</button>
+                </div>
+
+                <textarea id="code" spellcheck="false" autocapitalize="off"
+                    autocomplete="off">numbers = [5, 3, 8, 1, 2]
+
+n = len(numbers)
+
+for i in range(n):
+    for j in range(0, n - i - 1):
+        if numbers[j] > numbers[j + 1]:
+            numbers[j], numbers[j + 1] = numbers[j + 1], numbers[j]
+
+print("Sorted list:", numbers)</textarea>
+
+                <div class="editor-footer">
+                    <span>Tip: Try changing the numbers ✨</span>
+                    <span id="lineCount">9 lines</span>
+                </div>
+
+                <button class="run-button" id="runBtn">
+                    <span>▶</span> Run &amp; Explain
+                    <span class="button-sparkle">✦</span>
+                </button>
+                <p class="run-hint">Your code will be traced step by step.</p>
+            </div>
+
+            <div class="panel flow-panel">
+                <div class="panel-heading">
+                    <div class="panel-title">
+                        <span class="heading-icon orange-icon">✧</span>
+                        <div>
+                            <h2>Animated Code Flow</h2>
+                            <p>See what Python is doing</p>
+                        </div>
+                    </div>
+                    <span class="live-chip"><span></span> LIVE TRACE</span>
+                </div>
+
+                <div class="flow-stage" id="flowStage">
+                    <div class="empty-illustration">
+                        <div class="orbit orbit-one"></div>
+                        <div class="orbit orbit-two"></div>
+                        <div class="empty-code-icon">{ }</div>
+                    </div>
+                    <h3>Your code is ready to move</h3>
+                    <p>Click <strong>Run &amp; Explain</strong> to watch the values move.</p>
+                </div>
+
+                <div class="explanation-card">
+                    <div class="explanation-heading"><span>✦</span> YOUR PYTHON GUIDE</div>
+                    <p id="explanation">Your explanation will appear here after you run your code.</p>
+                </div>
+
+                <div class="step-controls">
+                    <button class="control-button" id="prevBtn" disabled title="Previous step">←</button>
+                    <button class="play-button" id="playBtn" disabled>▶ Play animation</button>
+                    <button class="control-button" id="nextBtn" disabled title="Next step">→</button>
+                    <button class="control-button" id="resetBtn" disabled title="Reset animation">↺</button>
+                </div>
+
+                <div class="progress-info">
+                    <span id="stepBadge">Waiting for code</span>
+                    <span id="progressPercent">0%</span>
+                </div>
+                <div class="progress-track"><div id="progressBar"></div></div>
+            </div>
+        </section>
+
+        <section class="bottom-grid">
+            <div class="panel memory-panel" id="memory">
+                <div class="panel-heading">
+                    <div class="panel-title">
+                        <span class="heading-icon blue-icon">◈</span>
+                        <div><h2>Memory Lab</h2><p>Values stored by Python</p></div>
+                    </div>
+                    <span class="count-chip" id="memoryCount">0 items</span>
+                </div>
+                <div class="memory-content" id="variables">
+                    <div class="memory-empty"><span>◇</span><p>Your variables will appear here.</p></div>
+                </div>
+                <div class="memory-footnote">Values update as you move between steps.</div>
+            </div>
+
+            <div class="panel console-panel" id="console">
+                <div class="panel-heading">
+                    <div class="panel-title">
+                        <span class="heading-icon green-icon">⌁</span>
+                        <div><h2>Output Console</h2><p>What your program prints</p></div>
+                    </div>
+                    <button class="text-button" id="clearOutputBtn">Clear</button>
+                </div>
+                <div class="console-window">
+                    <div class="console-top">
+                        <span></span><span></span><span></span><label>terminal — Python</label>
+                    </div>
+                    <pre id="output">Waiting for your program...</pre>
+                    <div id="errorBox" class="error-box" hidden></div>
+                </div>
+                <div class="console-footer"><span class="status-dot"></span> Console output</div>
+            </div>
+        </section>
+
+        <footer class="page-footer">
+            <span>✦ Built for curious minds</span>
+            <span>BugTimeMachine • Learn Python visually</span>
+        </footer>
+    </main>
+</div>
+
+<script>
+const codeEditor = document.getElementById("code");
+const runBtn = document.getElementById("runBtn");
+const playBtn = document.getElementById("playBtn");
+const prevBtn = document.getElementById("prevBtn");
+const nextBtn = document.getElementById("nextBtn");
+const resetBtn = document.getElementById("resetBtn");
+const flowStage = document.getElementById("flowStage");
+const explanation = document.getElementById("explanation");
+const variablesBox = document.getElementById("variables");
+const outputBox = document.getElementById("output");
+const errorBox = document.getElementById("errorBox");
+
+let events = [];
+let stepIndex = 0;
+let playTimer = null;
+let lastVariables = {};
+
+const bubbleSortExample = `numbers = [5, 3, 8, 1, 2]
+
+n = len(numbers)
+
+for i in range(n):
+    for j in range(0, n - i - 1):
+        if numbers[j] > numbers[j + 1]:
+            numbers[j], numbers[j + 1] = numbers[j + 1], numbers[j]
+
+print("Sorted list:", numbers)`;
+
+function escapeHTML(value) {
+    return String(value).replace(/[&<>"']/g, character => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+    })[character]);
+}
+
+function updateLineCount() {
+    const count = codeEditor.value.split("\n").length;
+    document.getElementById("lineCount").textContent =
+        count + (count === 1 ? " line" : " lines");
+}
+
+function stopPlayback() {
+    if (playTimer) {
+        clearInterval(playTimer);
+        playTimer = null;
+    }
+    playBtn.innerHTML = "▶ Play animation";
+    playBtn.classList.remove("playing");
+}
+
+function getArray(value) {
+    if (Array.isArray(value)) return value;
+
+    if (typeof value === "string") {
+        try {
+            const parsed = JSON.parse(value);
+            return Array.isArray(parsed) ? parsed : null;
+        } catch (_) {
+            return null;
+        }
+    }
+    return null;
+}
+
+function isBubbleSortCode(source) {
+    return /for\s+\w+\s+in\s+range/.test(source) &&
+           /\[\s*\w+\s*\]\s*>/.test(source) &&
+           /print\s*\(/.test(source);
+}
+
+function renderCodePreview(activeLine) {
+    const lines = codeEditor.value.split("\n");
+
+    return `
+        <div class="code-preview">
+            <div class="preview-label">
+                <span class="preview-pulse"></span> EXECUTING YOUR CODE
+            </div>
+            <div class="code-lines">
+                ${lines.map((line, index) => `
+                    <div class="code-line ${index + 1 === activeLine ? "active-line" : ""} ${index + 1 < activeLine ? "past-line" : ""}">
+                        <span class="line-number">${index + 1}</span>
+                        <code>${escapeHTML(line || " ")}</code>
+                        <span class="line-marker">${index + 1 === activeLine ? "◀" : (index + 1 < activeLine ? "✓" : "")}</span>
+                    </div>
+                `).join("")}
+            </div>
+            <div class="flow-current">
+                <span class="flow-current-icon">⚡</span>
+                <div><small>PYTHON IS NOW ON</small><strong>Line ${activeLine}</strong></div>
+            </div>
+        </div>`;
+}
+
+function renderBubbleSort(event, currentLine) {
+    const vars = event.variables || {};
+    const values = getArray(vars.numbers);
+
+    if (!values || !values.length ||
+        !values.every(value => typeof value === "number")) {
+        return false;
+    }
+
+    const j = Number(vars.j);
+    const hasComparison = /^\s*if\s+numbers\s*\[/.test(currentLine) &&
+                          Number.isInteger(j) &&
+                          j >= 0 && j + 1 < values.length;
+
+    const hasSwap = /numbers\s*\[.*\]\s*,\s*numbers\s*\[.*\]\s*=/.test(currentLine);
+    const maxValue = Math.max(...values.map(value => Math.abs(value)), 1);
+    const sortedCount = Number(vars.i) || 0;
+
+    const bars = values.map((value, index) => {
+        const comparing = hasComparison && (index === j || index === j + 1);
+        const height = Math.max(22, Math.abs(value) / maxValue * 125);
+        const colorClass = comparing ? "comparing" : "";
+
+        return `
+            <div class="bubble-slot">
+                <div class="bubble-bar ${colorClass}"
+                     style="height:${height}px; animation-delay:${index * 45}ms">
+                    <span>${escapeHTML(value)}</span>
+                </div>
+                <small class="bubble-index">Index ${index}</small>
+            </div>`;
+    }).join("");
+
+    let title = "Current array";
+    let message = "Each bar represents one value in the list.";
+
+    if (hasComparison) {
+        const left = values[j];
+        const right = values[j + 1];
+        title = "Compare neighbouring values";
+        message = left > right
+            ? `${left} is greater than ${right}. The next step swaps these two values.`
+            : `${left} is not greater than ${right}. These two values stay in place.`;
+    } else if (hasSwap) {
+        title = "Swapping two values";
+        message = "Python exchanges the neighbouring values. Watch the bars change in the following step.";
+    } else if (/^\s*for\s/.test(currentLine)) {
+        title = "Loop in progress";
+        message = "The loop controls which neighbouring values are checked during this pass.";
+    } else if (/^\s*print\s*\(/.test(currentLine)) {
+        title = "Sorting finished";
+        message = "Python prints the final list after the comparisons and swaps are complete.";
+    }
+
+    flowStage.innerHTML = `
+        <div class="animation-stage">
+            <div class="animation-topline">
+                <span class="animation-badge">BUBBLE SORT</span>
+                <span class="animation-line">LINE ${event.line}</span>
+            </div>
+
+            <div class="bubble-stats">
+                <div class="bubble-stat"><small>ARRAY SIZE</small><strong>${values.length}</strong></div>
+                <div class="bubble-stat"><small>OUTER PASS</small><strong>${escapeHTML(vars.i ?? 0)}</strong></div>
+                <div class="bubble-stat"><small>COMPARISON</small><strong>${hasComparison ? `${j + 1}` : "—"}</strong></div>
+            </div>
+
+            <div class="bubble-bars">${bars}</div>
+
+            <div class="bubble-legend">
+                <span><i class="legend-dot" style="background:#8170F5"></i>Value</span>
+                <span><i class="legend-dot" style="background:#F59E0B"></i>Being compared</span>
+            </div>
+
+            <div class="bubble-message">
+                <strong>${escapeHTML(title)}</strong><br>
+                ${escapeHTML(message)}
+            </div>
+        </div>`;
+
+    explanation.textContent = message;
+    return true;
+}
+
+function renderGenericVisual(event, currentLine) {
+    const vars = event.variables || {};
+    const text = currentLine.trim();
+    let title = "One step at a time";
+    let message = "Python executes this statement. Watch the highlighted code and variable values.";
+    let graphic = "";
+
+    const assignment = text.match(/^([A-Za-z_]\w*)\s*=\s*(.+)$/);
+
+    if (assignment && !text.includes("==")) {
+        const variable = assignment[1];
+        const value = vars[variable] ?? "value";
+
+        title = "A variable gets a value";
+        message = `Python evaluates the expression and stores the result in ${variable}.`;
+
+        graphic = `
+            <div class="assignment-visual">
+                <div class="variable-bubble"><small>VARIABLE</small><strong>${escapeHTML(variable)}</strong></div>
+                <div class="assignment-arrow">←</div>
+                <div class="value-bubble"><small>STORED VALUE</small><strong>${escapeHTML(value)}</strong></div>
+            </div>`;
+    } else if (/^\s*if\b/.test(text)) {
+        title = "Python checks a condition";
+        message = "Python evaluates the condition and chooses which block to execute.";
+    } else if (/^\s*(for|while)\b/.test(text)) {
+        title = "A loop is running";
+        message = "Python repeats the loop body according to the loop rules.";
+    } else if (/^\s*print\s*\(/.test(text)) {
+        title = "Sending something to the console";
+        message = "Python displays the result of print() in the Output Console.";
+    }
+
+    if (!graphic) {
+        graphic = `
+            <div class="concept-visual">
+                <span class="concept-icon">✦</span>
+                <div><strong>${escapeHTML(title)}</strong>
+                <small>Follow the highlighted line and variable values.</small></div>
+            </div>`;
+    }
+
+    flowStage.innerHTML = `
+        <div class="animation-stage">
+            <div class="animation-topline">
+                <span class="animation-badge">STEP ${stepIndex + 1}</span>
+                <span class="animation-line">LINE ${event.line}</span>
+            </div>
+            <div class="current-code-card">
+                <span class="code-card-icon">›</span>
+                <code>${escapeHTML(text || "(blank line)")}</code>
+            </div>
+            <div class="visualizer">${graphic}</div>
+            <div class="animation-caption">
+                <span class="caption-spark">✦</span>
+                <div><strong>${escapeHTML(title)}</strong><p>${escapeHTML(message)}</p></div>
+            </div>
+        </div>`;
+
+    explanation.textContent = message;
+}
+
+function renderVariables(currentVars) {
+    const entries = Object.entries(currentVars || {});
+    document.getElementById("variableCount").textContent = entries.length;
+    document.getElementById("memoryCount").textContent =
+        entries.length + (entries.length === 1 ? " item" : " items");
+
+    if (!entries.length) {
+        variablesBox.innerHTML =
+            `<div class="memory-empty"><span>◇</span><p>No variables in this step yet.</p></div>`;
+        lastVariables = {};
+        return;
+    }
+
+    variablesBox.innerHTML = entries.map(([name, value], index) => {
+        const changed = lastVariables[name] !== undefined &&
+                        lastVariables[name] !== value;
+        const colors = ["var-violet", "var-blue", "var-orange", "var-green"];
+
+        return `
+            <div class="variable-card ${colors[index % colors.length]} ${changed ? "variable-changed" : ""}">
+                <div class="variable-card-top">
+                    <span class="variable-symbol">x</span>
+                    <span class="variable-type">VARIABLE</span>
+                    ${changed ? '<span class="changed-tag">UPDATED</span>' : ""}
+                </div>
+                <div class="variable-name">${escapeHTML(name)}</div>
+                <div class="variable-value">${escapeHTML(value)}</div>
+            </div>`;
+    }).join("");
+
+    lastVariables = {...currentVars};
+}
+
+function renderStep(index) {
+    if (!events.length) return;
+
+    stepIndex = Math.max(0, Math.min(index, events.length - 1));
+    const event = events[stepIndex];
+    const lines = codeEditor.value.split("\n");
+    const currentLine = lines[event.line - 1] || "";
+
+    flowStage.innerHTML = renderCodePreview(event.line);
+
+    if (!isBubbleSortCode(codeEditor.value) ||
+        !renderBubbleSort(event, currentLine)) {
+        renderGenericVisual(event, currentLine);
+    }
+
+    renderVariables(event.variables || {});
+
+    document.getElementById("currentStepStat").textContent =
+        `${stepIndex + 1}/${events.length}`;
+    document.getElementById("stepBadge").textContent =
+        `Step ${stepIndex + 1} of ${events.length}`;
+
+    const percent = Math.round(((stepIndex + 1) / events.length) * 100);
+    document.getElementById("progressPercent").textContent = percent + "%";
+    document.getElementById("progressBar").style.width = percent + "%";
+
+    prevBtn.disabled = stepIndex === 0;
+    nextBtn.disabled = stepIndex === events.length - 1;
+    resetBtn.disabled = false;
+
+    if (stepIndex === events.length - 1) stopPlayback();
+}
+
+async function runCode() {
+    stopPlayback();
+    runBtn.disabled = true;
+    runBtn.textContent = "Tracing code...";
+    errorBox.hidden = true;
+    outputBox.textContent = "Running your Python code...";
+    lastVariables = {};
+
+    try {
+        const response = await fetch("/trace", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({code: codeEditor.value})
+        });
+
+        const data = await response.json();
+
+        events = data.events || [];
+        document.getElementById("totalSteps").textContent = events.length;
+        outputBox.textContent = data.output || "(No printed output)";
+
+        if (!response.ok || !data.ok) {
+            document.getElementById("runStatus").textContent = "Error";
+            errorBox.textContent = data.error || "Unable to trace this code.";
+            errorBox.hidden = false;
+
+            if (events.length) {
+                renderStep(0);
+            } else {
+                flowStage.innerHTML = `
+                    <div class="error-stage">
+                        <span>!</span><h3>Let's fix that bug</h3>
+                        <p>${escapeHTML(data.error || "Check your code and try again.")}</p>
+                    </div>`;
+                explanation.textContent = "Read the error message and correct your Python code.";
+            }
+            return;
+        }
+
+        document.getElementById("runStatus").textContent = "Success";
+        document.getElementById("runStatus").classList.add("success-status");
+
+        if (!events.length) {
+            flowStage.innerHTML = "<h3>Program finished</h3><p>No execution events were captured.</p>";
+            playBtn.disabled = true;
+            prevBtn.disabled = true;
+            nextBtn.disabled = true;
+            resetBtn.disabled = true;
+            return;
+        }
+
+        playBtn.disabled = false;
+        prevBtn.disabled = false;
+        nextBtn.disabled = false;
+        resetBtn.disabled = false;
+        renderStep(0);
+
+    } catch (error) {
+        document.getElementById("runStatus").textContent = "Offline";
+        errorBox.textContent = error.message;
+        errorBox.hidden = false;
+        outputBox.textContent = "Could not connect to Flask. Make sure the server is running.";
+    } finally {
+        runBtn.disabled = false;
+        runBtn.innerHTML = '<span>▶</span> Run &amp; Explain <span class="button-sparkle">✦</span>';
+    }
+}
+
+function togglePlayback() {
+    if (!events.length) return;
+
+    if (playTimer) {
+        stopPlayback();
+        return;
+    }
+
+    if (stepIndex >= events.length - 1) renderStep(0);
+
+    playBtn.textContent = "Ⅱ Pause animation";
+    playBtn.classList.add("playing");
+
+    playTimer = setInterval(() => {
+        if (stepIndex >= events.length - 1) {
+            stopPlayback();
+            return;
+        }
+        renderStep(stepIndex + 1);
+    }, 850);
+}
+
+runBtn.addEventListener("click", runCode);
+playBtn.addEventListener("click", togglePlayback);
+
+prevBtn.addEventListener("click", () => {
+    stopPlayback();
+    renderStep(stepIndex - 1);
+});
+
+nextBtn.addEventListener("click", () => {
+    stopPlayback();
+    renderStep(stepIndex + 1);
+});
+
+resetBtn.addEventListener("click", () => {
+    stopPlayback();
+    renderStep(0);
+});
+
+document.getElementById("exampleBtn").addEventListener("click", () => {
+    stopPlayback();
+    codeEditor.value = bubbleSortExample;
+    updateLineCount();
+});
+
+codeEditor.addEventListener("input", updateLineCount);
+
+document.getElementById("clearOutputBtn").addEventListener("click", () => {
+    outputBox.textContent = "Console cleared.";
+    errorBox.hidden = true;
+});
+
+document.querySelectorAll(".nav-item").forEach(button => {
+    button.addEventListener("click", () => {
+        document.querySelectorAll(".nav-item").forEach(item =>
+            item.classList.remove("active")
+        );
+        button.classList.add("active");
+
+        const target = document.getElementById(button.dataset.section);
+        if (target) {
+            target.scrollIntoView({behavior: "smooth", block: "start"});
+        }
+    });
+});
+
+updateLineCount();
+</script>
+</body>
+</html>
+
